@@ -59,6 +59,11 @@ where
         "instance was found (find_optional) after deletion"
     );
 
+    assert!(
+        E::find_all(pool).await.unwrap().is_empty(),
+        "there was an instance found in the database before creating"
+    );
+
     instance.create(pool).await.expect("insertion did not work");
 
     let retrieved = E::find(instance.pk(), pool)
@@ -66,6 +71,8 @@ where
         .expect("instance not found after insertion");
 
     assert_eq!(instance, retrieved);
+
+    assert_eq!(E::find_all(pool).await.unwrap(), vec![instance.clone()]);
 }
 
 /// Tests updating of an entity in the database.
