@@ -8,12 +8,12 @@ use crate::schema::column::{Column, DataColumn, TimestampColumn};
 use crate::schema::keys::{ForeignKey, PrimaryKey};
 
 #[derive(Clone, Debug)]
-pub struct TableId {
-    pub schema: String,
-    pub table: String,
+pub struct TableIdRaw {
+    pub schema: Option<String>,
+    pub table: Option<String>,
 }
 
-impl Parse for TableId {
+impl Parse for TableIdRaw {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut schema = None;
         let mut table = None;
@@ -41,16 +41,23 @@ impl Parse for TableId {
             input.parse::<Token![,]>()?;
         }
 
-        let schema = schema.ok_or_else(|| {
-            syn::Error::new(input.span(), "`#[table]` requires a value for `schema`")
-        })?;
-
-        let table = table.ok_or_else(|| {
-            syn::Error::new(input.span(), "`#[table]` requires a value for `name`")
-        })?;
-
         Ok(Self { schema, table })
     }
+}
+
+impl TableIdRaw {
+    fn build(self, item: &syn::ItemStruct) -> TableId {
+        TableId {
+            schema: self.schema.unwrap_or_else(|| "public".into()),
+            table: self.table.unwrap_or_else(|| item.ident.to_string()),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TableId {
+    pub schema: String,
+    pub table: String,
 }
 
 #[derive(Clone, Debug)]
@@ -73,7 +80,7 @@ impl Parse for Table {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let item: syn::ItemStruct = input.parse()?;
 
-        let id: TableId = item
+        let id: TableIdRaw = item
             .attrs
             .iter()
             .find(|attr| attr.path().is_ident("table"))
@@ -82,6 +89,8 @@ impl Parse for Table {
                 "You need to use the `#[table]` attribute if you want to derive `Schema`",
             ))?
             .parse_args()?;
+
+        let id = id.build(&item);
 
         let hooks: Hooks = {
             let attr = item.attrs.iter().find(|attr| attr.path().is_ident("hooks"));

@@ -3,7 +3,7 @@ use atmosphere::prelude::*;
 use sqlx::types::chrono;
 
 #[derive(Schema, Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-#[table(schema = "public", name = "user")]
+#[table(name = "user")]
 struct User {
     #[sql(pk)]
     id: i32,
@@ -13,7 +13,7 @@ struct User {
 }
 
 #[derive(Schema, Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-#[table(schema = "public", name = "post")]
+#[table(name = "post")]
 struct Post {
     #[sql(pk)]
     id: i32,
